@@ -15,18 +15,24 @@ using namespace std;
 class RF
 {
     public:
-        bitset<32> ReadData1, ReadData2; 
+        bitset<32> ReadData1, ReadData2;
      	RF()
-    	{ 
-          Registers.resize(32);  
-          Registers[0] = bitset<32> (0);  
+    	{
+          Registers.resize(32);
+          Registers[0] = bitset<32> (0);
         }
-	
+
         void ReadWrite(bitset<5> RdReg1, bitset<5> RdReg2, bitset<5> WrtReg, bitset<32> WrtData, bitset<1> WrtEnable)
-        {   
-            // implement the funciton by you.                
+        {
+            // implement the funciton by you.
+             ReadData1 = Registers[RdReg1.to_ulong()];
+            ReadData2 = Registers[RdReg2.to_ulong()];
+            if(WrtEnable.to_ulong() == 1)
+            {
+                Registers[WrtReg.to_ulong()] = WrtData;
+            }
          }
-		 
+
 	void OutputRF()
              {
                ofstream rfout;
@@ -35,18 +41,18 @@ class RF
                   {
                     rfout<<"A state of RF:"<<endl;
                   for (int j = 0; j<32; j++)
-                      {        
+                      {
                         rfout << Registers[j]<<endl;
                       }
-                     
+
                   }
                   else cout<<"Unable to open file";
                   rfout.close();
-               
-               }     
+
+               }
 	private:
             vector<bitset<32> >Registers;
-	
+
 };
 
 class ALU
@@ -54,8 +60,8 @@ class ALU
       public:
              bitset<32> ALUresult;
              bitset<32> ALUOperation (bitset<3> ALUOP, bitset<32> oprand1, bitset<32> oprand2)
-             {   
-                 // implement the ALU operations by you. 
+             {
+                 // implement the ALU operations by you.
 		 if (ALUOP == 2)
 			ALUresult = oprand1.to_ulong() + oprand2.to_ulong();
 		 else if (ALUOP == 3)
@@ -67,7 +73,7 @@ class ALU
 		 else if (ALUOP == 7)
 			ALUresult = !(oprand1.to_ulong() | oprand2.to_ulong());
                  return ALUresult;
-               }            
+               }
 };
 
 class INSMem
@@ -75,7 +81,7 @@ class INSMem
       public:
           bitset<32> Instruction;
           INSMem()
-          {       IMem.resize(MemSize); 
+          {       IMem.resize(MemSize);
                   ifstream imem;
                   string line;
                   int i=0;
@@ -83,19 +89,19 @@ class INSMem
                   if (imem.is_open())
                   {
                   while (getline(imem,line))
-                     {      
+                     {
                         IMem[i] = bitset<8>(line);
                         i++;
                      }
-                     
+
                   }
                   else cout<<"Unable to open file";
                   imem.close();
-                     
+
                   }
-                  
+
           bitset<32> ReadMemory (bitset<32> ReadAddress) //0x00000000 0x00000004 0x00000008 ...
-          {    
+          {
                // implement by you. (Read the byte at the ReadAddress and the following three byte).
 				int j, k;
 				int l = 31;
@@ -106,21 +112,21 @@ class INSMem
 						l--;
 					}
 				}
-       			return Instruction;     
-          }     
-      
+       			return Instruction;
+          }
+
       private:
            vector<bitset<8> > IMem;
-      
+
 };
-      
-class DataMem    
+
+class DataMem
 {
       public:
-          bitset<32> readdata;  
+          bitset<32> readdata;
           DataMem()
           {
-             DMem.resize(MemSize); 
+             DMem.resize(MemSize);
              ifstream dmem;
                   string line;
                   int i=0;
@@ -128,22 +134,22 @@ class DataMem
                   if (dmem.is_open())
                   {
                   while (getline(dmem,line))
-                       {      
+                       {
                         DMem[i] = bitset<8>(line);
                         i++;
                        }
                   }
                   else cout<<"Unable to open file";
                   dmem.close();
-          
-          }  
-          bitset<32> MemoryAccess (bitset<32> Address, bitset<32> WriteData, bitset<1> readmem, bitset<1> writemem) 
-          {    
-               
+
+          }
+          bitset<32> MemoryAccess (bitset<32> Address, bitset<32> WriteData, bitset<1> readmem, bitset<1> writemem)
+          {
+
                // implement by you.
-               return readdata;     
-          }   
-                     
+               return readdata;
+          }
+
           void OutputDataMem()
           {
                ofstream dmemout;
@@ -151,23 +157,23 @@ class DataMem
                   if (dmemout.is_open())
                   {
                   for (int j = 0; j< 1000; j++)
-                       {     
+                       {
                         dmemout << DMem[j]<<endl;
                        }
-                     
+
                   }
                   else cout<<"Unable to open file";
                   dmemout.close();
-               
-               }             
-      
+
+               }
+
       private:
            vector<bitset<8> > DMem;
-      
-};  
+
+};
 
 
-   
+
 int main()
 {
     RF myRF;
@@ -200,17 +206,17 @@ int main()
 			ins = R-type;
 
 		// Execute
-		
+
 		// Read/Write Mem
-		
+
 		// Write back to RF
-		
+
 		cout << "PC: " << pc << endl;
 		pc = pc + 4;
-        myRF.OutputRF(); // dump RF;    
+        myRF.OutputRF(); // dump RF;
     }
         myDataMem.OutputDataMem(); // dump data mem
-      
+
         return 0;
-        
+
 }
