@@ -33,6 +33,16 @@ bitset<5> getFiveBits(bitset<32> Ins, int start, int end) {
 	return temp;
 }
 
+bitset<32> signExtend(bitset<16> Imm){
+	int j;
+	std::bitset<32> extend;
+	for (j = 0; j < 16; j++){
+		extend[j] = Imm[j];
+		extend[j+16] = Imm[15];
+	}
+	return extend;
+}
+
 class RF
 {
     public:
