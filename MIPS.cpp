@@ -25,7 +25,7 @@ class RF
         void ReadWrite(bitset<5> RdReg1, bitset<5> RdReg2, bitset<5> WrtReg, bitset<32> WrtData, bitset<1> WrtEnable)
         {
             // implement the funciton by you.
-             ReadData1 = Registers[RdReg1.to_ulong()];
+            ReadData1 = Registers[RdReg1.to_ulong()];
             ReadData2 = Registers[RdReg2.to_ulong()];
             if(WrtEnable.to_ulong() == 1)
             {
@@ -62,18 +62,18 @@ class ALU
              bitset<32> ALUOperation (bitset<3> ALUOP, bitset<32> oprand1, bitset<32> oprand2)
              {
                  // implement the ALU operations by you.
-		 if (ALUOP == 2)
-			ALUresult = oprand1.to_ulong() + oprand2.to_ulong();
-		 else if (ALUOP == 3)
-			ALUresult = oprand1.to_ulong() - oprand2.to_ulong();
-		 else if (ALUOP == 0)
-			ALUresult = oprand1.to_ulong() & oprand2.to_ulong();
-		 else if (ALUOP == 1)
-			ALUresult = oprand1.to_ulong() | oprand2.to_ulong();
-		 else if (ALUOP == 7)
-			ALUresult = !(oprand1.to_ulong() | oprand2.to_ulong());
-                 return ALUresult;
-               }
+                if(ALUOP.to_ulong() == ADDU)
+                    ALUresult = oprand1.to_ulong() + oprand2.to_ulong();
+                else if(ALUOP.to_ulong() == SUBU)
+                    ALUresult = oprand1.to_ulong() - oprand2.to_ulong();
+                else if(ALUOP.to_ulong() == AND)
+                    ALUresult = oprand1 & oprand2;
+                else if (ALUOP.to_ulong() == OR)
+                    ALUresult = oprand1|oprand2;
+                else if (ALUOP == NOR)
+                    ALUresult = !(oprand1|oprand2);
+                return ALUresult;
+            }
 };
 
 class INSMem
