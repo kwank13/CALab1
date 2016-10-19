@@ -91,7 +91,7 @@ class ALU
                     ALUresult = oprand1 & oprand2;
                 else if (ALUOP.to_ulong() == OR)
                     ALUresult = oprand1|oprand2;
-                else if (ALUOP == NOR)
+                else if (ALUOP.to_ulong() == NOR)
                     ALUresult = !(oprand1|oprand2);
                 return ALUresult;
             }
@@ -124,15 +124,12 @@ class INSMem
           bitset<32> ReadMemory (bitset<32> ReadAddress) //0x00000000 0x00000004 0x00000008 ...
           {
                // implement by you. (Read the byte at the ReadAddress and the following three byte).
-				int j, k;
-				int l = 31;
-				for (j = 0; j < 4; j++){ //Read 4 bytes from IMem
+				string tempInst;
+				for (int j = 0; j < 4; j++){ //Read 4 bytes from IMem
 					bitset<8> temp = IMem[(ReadAddress.to_ulong()) + j]; //Read byte from IMem
-					for (k = 7; k > -1; k--){
-						Instruction[l] = temp[k]; //Write byte to Instruction index
-						l--;
-					}
+					tempInst = tempInst + temp.to_string();
 				}
+				Instruction = tempInst;
        			return Instruction;
           }
 
@@ -168,6 +165,23 @@ class DataMem
           {
 
                // implement by you.
+               if(readmem.to_ulong() == 1){
+                    string tempReadData;
+                    for(int i = 0; i < 4; i++){
+                        bitset<8> tempData = DMem[Address.to_ulong()+i];
+                        tempReadData = tempReadData+tempData.to_string;
+                    }
+                    readData = tempReadData;
+               }
+               else if(writemem.to_ulong() == 1){
+                    int l = 31;
+                    for(int i = 0; i < 4; i++){
+                            for(int j = 7; j >= 0; j--){
+                                DMem[Address.to_ulong()+i][j] = WriteData[l];
+                                l--;
+                            }
+                    }
+               }
                return readdata;
           }
 
