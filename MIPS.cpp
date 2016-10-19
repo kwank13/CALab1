@@ -56,6 +56,16 @@ class ALU
              bitset<32> ALUOperation (bitset<3> ALUOP, bitset<32> oprand1, bitset<32> oprand2)
              {   
                  // implement the ALU operations by you. 
+		 if (ALUOP == 2)
+			ALUresult = oprand1.to_ulong() + oprand2.to_ulong();
+		 else if (ALUOP == 3)
+			ALUresult = oprand1.to_ulong() - oprand2.to_ulong();
+		 else if (ALUOP == 0)
+			ALUresult = oprand1.to_ulong() & oprand2.to_ulong();
+		 else if (ALUOP == 1)
+			ALUresult = oprand1.to_ulong() | oprand2.to_ulong();
+		 else if (ALUOP == 7)
+			ALUresult = !(oprand1.to_ulong() | oprand2.to_ulong());
                  return ALUresult;
                }            
 };
@@ -84,11 +94,20 @@ class INSMem
                      
                   }
                   
-          bitset<32> ReadMemory (bitset<32> ReadAddress) 
-              {    
+          bitset<32> ReadMemory (bitset<32> ReadAddress) //0x00000000 0x00000004 0x00000008 ...
+          {    
                // implement by you. (Read the byte at the ReadAddress and the following three byte).
-               return Instruction;     
-              }     
+				int j, k;
+				int l = 31;
+				for (j = 0; j < 4; j++){ //Read 4 bytes from IMem
+					bitset<8> temp = IMem[(ReadAddress.to_ulong()) + j]; //Read byte from IMem
+					for (k = 7; k > -1; k--){
+						Instruction[l] = temp[k]; //Write byte to Instruction index
+						l--;
+					}
+				}
+       			return Instruction;     
+          }     
       
       private:
            vector<bitset<8> > IMem;
@@ -156,20 +175,38 @@ int main()
     INSMem myInsMem;
     DataMem myDataMem;
 
+	int pc = 0, i;
+	bitset<32> curInstruction;
+	bitset<32> halt (std::string("11111111111111111111111111111111"));
+	bitset<6> opcode;
     while (1)
 	{
         // Fetch
-        
+        curInstruction = myInsMem.ReadMemory(pc);
+		cout << "CurIns: " << curInstruction << endl;
 		// If current insturciton is "11111111111111111111111111111111", then break;
-        
+        if (curInstruction == halt)
+			break;
+
+		int j = 5;
+		for (i = 31; i > 25; i--){
+			opcode[j] = curInstruction[i];
+			j--;
+		}
+		cout << "op code: " << opcode << endl;
+
 		// decode(Read RF)
-		
+		if (opcode == 0x00)
+			ins = R-type;
+
 		// Execute
 		
 		// Read/Write Mem
 		
 		// Write back to RF
 		
+		cout << "PC: " << pc << endl;
+		pc = pc + 4;
         myRF.OutputRF(); // dump RF;    
     }
         myDataMem.OutputDataMem(); // dump data mem
