@@ -98,11 +98,11 @@ class ALU
                 else if(ALUOP.to_ulong() == SUBU)
                     ALUresult = oprand1.to_ulong() - oprand2.to_ulong();
                 else if(ALUOP.to_ulong() == AND)
-                    ALUresult = oprand1 & oprand2;
+                    ALUresult = oprand1.to_ulong()  & oprand2.to_ulong() ;
                 else if (ALUOP.to_ulong() == OR)
-                    ALUresult = oprand1|oprand2;
+                    ALUresult = oprand1.to_ulong() |oprand2.to_ulong() ;
                 else if (ALUOP == NOR)
-                    ALUresult = !(oprand1|oprand2);
+                    ALUresult = !(oprand1.to_ulong() |oprand2.to_ulong() );
                 return ALUresult;
             }
 };
@@ -212,11 +212,13 @@ int main()
     INSMem myInsMem;
     DataMem myDataMem;
 
-	int pc = 0, i;
+	int pc = 0, nextAddr = 4;
 	bitset<32> curInstruction;
 	bitset<32> halt (std::string("11111111111111111111111111111111"));
-	bitset<6> opcode, bits0_5;
-	bitset<5> rs, rt, rd, shtamt;
+	bitset<26> jAddr;
+	bitset<16> imm;
+	bitset<6> opcode /*bits 31-26*/, funct /*bits 0-5*/;
+	bitset<5> rs /*bits 25-21*/, rt /*bits 20-16*/, rd /*bits 15-11*/, shtamt /*bits 10-6*/;
     while (1)
 	{
         // Fetch
@@ -227,12 +229,31 @@ int main()
 			break;
 
 		opcode = getSixBits(curInstruction, 31, 26);
-		rs = getFiveBits(curInstruction, 31, 27);
-		cout << "op code: " << opcode << " rs: " << rs << endl;
+		cout << "opcode: " << opcode << endl;
 
 		// decode(Read RF)
-		//if (opcode == 0x00)
-			//ins = R-type;
+		if (opcode == 0x00) {
+			rs = getFiveBits(curInstruction, 25, 20);
+			rt = getFiveBits(curInstruction, 20, 16);
+			rd = getFiveBits(curInstruction, 15, 11);
+			shtamt = getFiveBits(curInstruction, 10, 6);
+			funct = getSixBits(curInstruction, 5, 0);
+			
+			/* Status msgs
+			cout << "rs: " << rs << endl;
+			cout << "rt: " << rt << endl;
+			cout << "rd: " << rd << endl;
+			cout << "shtamt: " << shtamt << endl;
+			cout << "funct: " << funct << endl;
+			*/
+
+			myRF.ReadWrite(rs, rt, rd, curInstruction, 0);
+			cout << "Reg1: " << myRF.ReadData1 << endl;
+			cout << "Reg2: " << myRF.ReadData2 << endl;
+
+		} else if (opcode == 0x02) {
+		} else {
+		}
 
 		// Execute
 
@@ -241,7 +262,9 @@ int main()
 		// Write back to RF
 
 		cout << "PC: " << pc << endl;
-		pc = pc + 4;
+		pc = pc + nextAddr;
+		if (nextAddr != 4)
+			nextAddr = 4;
         myRF.OutputRF(); // dump RF;
     }
         myDataMem.OutputDataMem(); // dump data mem
