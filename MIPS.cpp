@@ -11,6 +11,27 @@ using namespace std;
 #define NOR 7
 #define MemSize 65536 // memory size, in reality, the memory size should be 2^32, but for this lab, for the space resaon, we keep it as this large number, but the memory is still 32-bit addressable.
 
+bitset<6> getSixBits(bitset<32> Ins, int start, int end) {
+	int i, j = 5;
+	bitset<6> temp;
+	for (i = start; i >= end; i--)
+	{
+		temp[j] = Ins[i];
+		j--;
+	}
+	return temp;
+}
+
+bitset<5> getFiveBits(bitset<32> Ins, int start, int end) {
+	int i, j = 4;
+	bitset<5> temp;
+	for (i = start; i >= end; i--)
+	{
+		temp[j] = Ins[i];
+		j--;
+	}
+	return temp;
+}
 
 class RF
 {
@@ -178,7 +199,8 @@ int main()
 	int pc = 0, i;
 	bitset<32> curInstruction;
 	bitset<32> halt (std::string("11111111111111111111111111111111"));
-	bitset<6> opcode;
+	bitset<6> opcode, bits0_5;
+	bitset<5> rs, rt, rd, shtamt;
     while (1)
 	{
         // Fetch
@@ -188,16 +210,13 @@ int main()
         if (curInstruction == halt)
 			break;
 
-		int j = 5;
-		for (i = 31; i > 25; i--){
-			opcode[j] = curInstruction[i];
-			j--;
-		}
-		cout << "op code: " << opcode << endl;
+		opcode = getSixBits(curInstruction, 31, 26);
+		rs = getFiveBits(curInstruction, 31, 27);
+		cout << "op code: " << opcode << " rs: " << rs << endl;
 
 		// decode(Read RF)
-		if (opcode == 0x00)
-			ins = R-type;
+		//if (opcode == 0x00)
+			//ins = R-type;
 
 		// Execute
 		
