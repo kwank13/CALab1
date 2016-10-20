@@ -33,6 +33,17 @@ bitset<5> getFiveBits(bitset<32> Ins, int start, int end) {
 	return temp;
 }
 
+bitset<3> getThreeBits(bitset<32> Ins, int start, int end) {
+	int i, j = 2;
+	bitset<3> temp;
+	for (i = start; i >= end; i--)
+	{
+		temp[j] = Ins[i];
+		j--;
+	}
+	return temp;
+}
+
 bitset<32> signExtend(bitset<16> Imm){
 	int j;
 	std::bitset<32> extend;
@@ -102,7 +113,7 @@ class ALU
                 else if (ALUOP.to_ulong() == OR)
                     ALUresult = oprand1|oprand2;
                 else if (ALUOP.to_ulong() == NOR)
-                    ALUresult = !(oprand1|oprand2);
+                    ALUresult = ~(oprand1|oprand2);
                 return ALUresult;
             }
 };
@@ -139,7 +150,7 @@ class INSMem
 					bitset<8> temp = IMem[(ReadAddress.to_ulong()) + j]; //Read byte from IMem
 					tempInst = tempInst + temp.to_string();
 				}
-				Instruction = tempInst;
+				Instruction = bitset<32>(tempInst);
        			return Instruction;
           }
 
@@ -179,9 +190,9 @@ class DataMem
                     string tempReadData;
                     for(int i = 0; i < 4; i++){
                         bitset<8> tempData = DMem[Address.to_ulong()+i];
-                        tempReadData = tempReadData+tempData.to_string;
+                        tempReadData = tempReadData + tempData.to_string();
                     }
-                    readData = tempReadData;
+                    readdata = bitset<32>(tempReadData);
                }
                else if(writemem.to_ulong() == 1){
                     int l = 31;
@@ -226,14 +237,16 @@ int main()
     INSMem myInsMem;
     DataMem myDataMem;
 
-	int pc = 0, nextAddr = 4;
+	bitset<32> pc = 0;
 	bitset<32> curInstruction;
-	bitset<32> halt (std::string("11111111111111111111111111111111"));
+	bitset<32> halt (0xFFFFFFFF);
 	bitset<26> jAddr;
 	bitset<16> imm;
-	bitset<6> opcode /*bits 31-26*/, funct /*bits 0-5*/;
-	bitset<5> rs /*bits 25-21*/, rt /*bits 20-16*/, rd /*bits 15-11*/, shtamt /*bits 10-6*/;
-    while (1)
+	bitset<6> opcode /*bits 31-26*/;
+	bitset<3> funct /*bits 2-0*/;//we only need 3 bits in this case
+	bitset<5> rs /*bits 25-21*/, rt /*bits 20-16*/, rd /*bits 15-11*/;
+    int round = 0;
+    while (round < 1)
 	{
         // Fetch
         curInstruction = myInsMem.ReadMemory(pc);
@@ -246,28 +259,31 @@ int main()
 		cout << "opcode: " << opcode << endl;
 
 		// decode(Read RF)
-		if (opcode == 0x00) {
+		if (opcode == 0x00) {//R-Type instruction
 			rs = getFiveBits(curInstruction, 25, 20);
 			rt = getFiveBits(curInstruction, 20, 16);
 			rd = getFiveBits(curInstruction, 15, 11);
-			shtamt = getFiveBits(curInstruction, 10, 6);
-			funct = getSixBits(curInstruction, 5, 0);
-			
-			/* Status msgs
+			funct = getThreeBits(curInstruction, 2, 0);//we only need 3 bits because we only need values from 0 through 7
+
+			// Status msgs
 			cout << "rs: " << rs << endl;
 			cout << "rt: " << rt << endl;
 			cout << "rd: " << rd << endl;
-			cout << "shtamt: " << shtamt << endl;
+			//cout << "shtamt: " << shtamt << endl;
 			cout << "funct: " << funct << endl;
-			*/
 
-			myRF.ReadWrite(rs, rt, rd, curInstruction, 0);
+
+			myRF.ReadWrite(rs, rt, rd, 0, 0);//read data from registers
+			myALU.ALUOperation(funct, myRF.ReadData1, myRF.ReadData2);//perform the operation
+			myRF.ReadWrite(rs, rt, rd, myALU.ALUresult, 1);
 			cout << "Reg1: " << myRF.ReadData1 << endl;
 			cout << "Reg2: " << myRF.ReadData2 << endl;
+			cout << "ALUResult: " << myALU.ALUresult << endl;
 
 		} else if (opcode == 0x02) {
 		} else {
 		}
+		round++;
 
 		// Execute
 
@@ -276,9 +292,9 @@ int main()
 		// Write back to RF
 
 		cout << "PC: " << pc << endl;
-		pc = pc + nextAddr;
-		if (nextAddr != 4)
-			nextAddr = 4;
+		//pc = pc + nextAddr;
+		//if (nextAddr != 4)
+			//nextAddr = 4;
         myRF.OutputRF(); // dump RF;
     }
         myDataMem.OutputDataMem(); // dump data mem
