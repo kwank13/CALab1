@@ -70,6 +70,7 @@ class RF
             ReadData2 = Registers[RdReg2.to_ulong()];
             if(WrtEnable.to_ulong() == 1)
             {
+				cout << "WrtData: " << WrtData << endl;
                 Registers[WrtReg.to_ulong()] = WrtData;
             }
          }
@@ -144,6 +145,7 @@ class INSMem
           bitset<32> ReadMemory (bitset<32> ReadAddress) //0x00000000 0x00000004 0x00000008 ...
           {
                // implement by you. (Read the byte at the ReadAddress and the following three byte).
+				/*
 				int j, k;
 				int l = 31;
 				for (j = 0; j < 4; j++){ //Read 4 bytes from IMem
@@ -152,8 +154,15 @@ class INSMem
 						Instruction[l] = temp[k]; //Write byte to Instruction index
 						l--;
 					}
+				}*/
+				string tempInst;
+				int j;
+				for (j = 0; j < 4; j++) {
+					bitset<8> temp = IMem[(ReadAddress.to_ulong()) + j];
+					tempInst = tempInst + temp.to_string();
 				}
-				return Instruction;
+				bitset<32> newIns (tempInst);
+				return Instruction = newIns;
 			}
 
       private:
@@ -188,8 +197,30 @@ class DataMem
           {
 
                // implement by you.
- 			  int j, k;
+			  if (readmem == 1) {
+					string tempReadData;
+                    for(int i = 0; i < 4; i++){
+                        bitset<8> tempData = DMem[Address.to_ulong()+i];
+                        tempReadData = tempReadData + tempData.to_string();
+                    }
+					bitset<32> temp (tempReadData);
+                    readdata = temp;
+					cout << "readdata: " << readdata << endl;
+               }
+               else if(writemem == 1){
+                    int l = 31;
+                    for(int i = 0; i < 4; i++){
+                            for(int j = 7; j >= 0; j--){
+                                DMem[Address.to_ulong()+i][j] = WriteData[l];
+                                l--;
+                            }
+                    }
+               }
+
+/* 
+			  int j, k;
 			  int l = 31;
+
               if(readmem == 1){
 					for (j = 0; j < 4; j++){ //Read 4 bytes from Dmem
 						bitset<8> temp = DMem[(Address.to_ulong()) + j]; //Read byte from DMem
@@ -201,23 +232,8 @@ class DataMem
 			  } else if (writemem == 1) {
 			  }
 					
-/*
-                    for(int i = 0; i < 4; i++){
-                        bitset<8> tempData = DMem[Address.to_ulong()+i];
-                        tempReadData = tempReadData+tempData.to_string;
-                    }
-                    readData = tempReadData;
-               }
-               else if(writemem.to_ulong() == 1){
-                    int l = 31;
-                    for(int i = 0; i < 4; i++){
-                            for(int j = 7; j >= 0; j--){
-                                DMem[Address.to_ulong()+i][j] = WriteData[l];
-                                l--;
-                            }
-                    }
-               }
 */
+
                return readdata;
           }
 
@@ -289,7 +305,7 @@ int main()
 				ALUop[i] = funct[i];
 			}
 			
-			/* Status msgs
+			/* Debugging msgs
 			cout << "rs: " << rs << endl;
 			cout << "rt: " << rt << endl;
 			cout << "rd: " << rd << endl;
@@ -299,8 +315,8 @@ int main()
 			*/
 
 			myRF.ReadWrite(rs, rt, rd, curInstruction, 0);
-			cout << "Reg1: " << myRF.ReadData1 << endl;
-			cout << "Reg2: " << myRF.ReadData2 << endl;
+			cout << "Reg1: " << myRF.ReadData1 << endl; //rs
+			cout << "Reg2: " << myRF.ReadData2 << endl; //rt
 			//cout << (int)halt.to_ulong() << endl;
 
 			/* j-type test
@@ -347,25 +363,33 @@ int main()
 		// Execute
 		if (opcode == 0x00) {
 			result = myALU.ALUOperation(ALUop, myRF.ReadData1, myRF.ReadData2);
+			cout << "result: " << result << endl << "isEqual:  " << isEqual << endl;
 		} else if (opcode != 0x02 || opcode != 0x2b) {
 			if (opcode == 0x04)
 				ALUop = 3;
 			else
 				ALUop = 1;
 			result = myALU.ALUOperation(ALUop, myRF.ReadData1, offset);
+			cout << "lw result: " << result << endl;
+			if (result == 0)
+				isEqual = true;
 		}
 
 		// Read/Write Mem
+		if (opcode == 0x23)
+			readData = myDataMem.MemoryAccess(result, myRF.ReadData2, 1, 0);
+		else if (opcode == 0x2b)
+			myDataMem.MemoryAccess(result, myRF.ReadData2, 0, 1);
 
 		// Write back to RF
-		if (opcode != 0x04 || opcode != 0x2b || opcode != 0x02) {
+		if (opcode != 0x04 && opcode != 0x2b && opcode != 0x02) {
 			if (opcode == 0x00)
-				myRF.ReadWrite(rs, rt, rd, readData, 1);
+				myRF.ReadWrite(rs, rt, rd, result, 1);
 			else
 				myRF.ReadWrite(rs, rt, rt, readData, 1);
 		}
 
-		cout << "jAddr: " << jAddr << endl;
+		//cout << "jAddr: " << jAddr << endl;
 		cout << "PC: " << pc.to_ulong() << endl;
 		if (opcode == 0x02)
 			pc = jAddr;
