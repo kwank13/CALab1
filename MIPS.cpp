@@ -43,6 +43,16 @@ bitset<32> signExtend(bitset<16> Imm){
 	return extend;
 }
 
+bitset<32> extend(bitset<16> Imm){
+	int j;
+	std::bitset<32> extend;
+	for (j = 0; j < 16; j++){
+		extend[j] = Imm[j];
+		extend[j+16] = 0;
+	}
+	return extend;
+}
+
 class RF
 {
     public:
@@ -98,11 +108,11 @@ class ALU
                 else if(ALUOP.to_ulong() == SUBU)
                     ALUresult = oprand1.to_ulong() - oprand2.to_ulong();
                 else if(ALUOP.to_ulong() == AND)
-                    ALUresult = oprand1.to_ulong()  & oprand2.to_ulong() ;
+                    ALUresult = oprand1 & oprand2;
                 else if (ALUOP.to_ulong() == OR)
                     ALUresult = oprand1|oprand2;
                 else if (ALUOP.to_ulong() == NOR)
-                    ALUresult = !(oprand1|oprand2);
+                    ALUresult = ~(oprand1|oprand2);
                 return ALUresult;
             }
 };
@@ -134,14 +144,17 @@ class INSMem
           bitset<32> ReadMemory (bitset<32> ReadAddress) //0x00000000 0x00000004 0x00000008 ...
           {
                // implement by you. (Read the byte at the ReadAddress and the following three byte).
-				string tempInst;
-				for (int j = 0; j < 4; j++){ //Read 4 bytes from IMem
+				int j, k;
+				int l = 31;
+				for (j = 0; j < 4; j++){ //Read 4 bytes from IMem
 					bitset<8> temp = IMem[(ReadAddress.to_ulong()) + j]; //Read byte from IMem
-					tempInst = tempInst + temp.to_string();
+					for (k = 7; k > -1; k--){
+						Instruction[l] = temp[k]; //Write byte to Instruction index
+						l--;
+					}
 				}
-				Instruction = tempInst;
-       			return Instruction;
-          }
+				return Instruction;
+			}
 
       private:
            vector<bitset<8> > IMem;
@@ -175,8 +188,20 @@ class DataMem
           {
 
                // implement by you.
-               if(readmem.to_ulong() == 1){
-                    string tempReadData;
+ 			  int j, k;
+			  int l = 31;
+              if(readmem == 1){
+					for (j = 0; j < 4; j++){ //Read 4 bytes from Dmem
+						bitset<8> temp = DMem[(Address.to_ulong()) + j]; //Read byte from DMem
+						for (k = 7; k > -1; k--){
+							readdata[l] = temp[k]; //Write byte to readdata index
+							l--;
+						}
+					}
+			  } else if (writemem == 1) {
+			  }
+					
+/*
                     for(int i = 0; i < 4; i++){
                         bitset<8> tempData = DMem[Address.to_ulong()+i];
                         tempReadData = tempReadData+tempData.to_string;
@@ -192,6 +217,7 @@ class DataMem
                             }
                     }
                }
+*/
                return readdata;
           }
 
@@ -226,17 +252,24 @@ int main()
     INSMem myInsMem;
     DataMem myDataMem;
 
-	int pc = 0, nextAddr = 4;
+	//int pc = 0, nextAddr = 4;
+	bool isEqual = false;
+	int i;
+	bitset<32> pc = 0x00;
 	bitset<32> curInstruction;
 	bitset<32> halt (std::string("11111111111111111111111111111111"));
-	bitset<26> jAddr;
+	bitset<32> jAddr;
+	bitset<32> result;
+	bitset<32> offset;
+	bitset<32> readData;
 	bitset<16> imm;
-	bitset<6> opcode /*bits 31-26*/, funct /*bits 0-5*/;
+	bitset<6> opcode /*bits 31-26*/, funct /*bits 5-0*/;
 	bitset<5> rs /*bits 25-21*/, rt /*bits 20-16*/, rd /*bits 15-11*/, shtamt /*bits 10-6*/;
+	bitset<3> ALUop;
     while (1)
 	{
         // Fetch
-        curInstruction = myInsMem.ReadMemory(pc);
+        curInstruction = myInsMem.ReadMemory(pc.to_ulong());
 		cout << "CurIns: " << curInstruction << endl;
 		// If current insturciton is "11111111111111111111111111111111", then break;
         if (curInstruction == halt)
@@ -252,6 +285,9 @@ int main()
 			rd = getFiveBits(curInstruction, 15, 11);
 			shtamt = getFiveBits(curInstruction, 10, 6);
 			funct = getSixBits(curInstruction, 5, 0);
+			for (i = 0; i < 3; i++) {
+				ALUop[i] = funct[i];
+			}
 			
 			/* Status msgs
 			cout << "rs: " << rs << endl;
@@ -259,26 +295,84 @@ int main()
 			cout << "rd: " << rd << endl;
 			cout << "shtamt: " << shtamt << endl;
 			cout << "funct: " << funct << endl;
+			cout << "ALUop: " << ALUop.to_ulong() << endl;
 			*/
 
 			myRF.ReadWrite(rs, rt, rd, curInstruction, 0);
 			cout << "Reg1: " << myRF.ReadData1 << endl;
 			cout << "Reg2: " << myRF.ReadData2 << endl;
+			//cout << (int)halt.to_ulong() << endl;
+
+			/* j-type test
+			bitset<26> temp (std::string("10000000000000000000000001"));
+			for (i = 2; i < 28; i++) {
+				jAddr[i] = temp[i-2];
+			}
+			cout << "test j: " << jAddr << endl;
+			for (i = 28; i < 32; i++) {
+				jAddr[i] = pc[i];
+			}
+			jAddr.set(0,0);
+			jAddr.set(1,0);
+			*/
 
 		} else if (opcode == 0x02) {
+			for (i = 2; i < 28; i++) {
+				jAddr[i] = curInstruction[i-2];
+			}
+			for (i = 28; i < 32; i++) {
+				jAddr[i] = pc[i];
+			}
+			jAddr.set(0,0);
+			jAddr.set(1,0);
+
 		} else {
+			rs = getFiveBits(curInstruction, 25, 20);
+			rt = getFiveBits(curInstruction, 20, 16);
+			for (i = 0; i < 16; i++) {
+				imm[i] = curInstruction[i];
+			}
+			offset = extend(imm);
+
+			/*
+			cout << "lw base: " << rs << endl;
+			cout << "lw reg : " << rt << endl;
+			cout << "offset : " << offset << endl;
+			*/
+
+			if (opcode != 0x2b)
+				myRF.ReadWrite(rs, rt, rd, curInstruction, 0);
 		}
 
 		// Execute
+		if (opcode == 0x00) {
+			result = myALU.ALUOperation(ALUop, myRF.ReadData1, myRF.ReadData2);
+		} else if (opcode != 0x02 || opcode != 0x2b) {
+			if (opcode == 0x04)
+				ALUop = 3;
+			else
+				ALUop = 1;
+			result = myALU.ALUOperation(ALUop, myRF.ReadData1, offset);
+		}
 
 		// Read/Write Mem
 
 		// Write back to RF
+		if (opcode != 0x04 || opcode != 0x2b || opcode != 0x02) {
+			if (opcode == 0x00)
+				myRF.ReadWrite(rs, rt, rd, readData, 1);
+			else
+				myRF.ReadWrite(rs, rt, rt, readData, 1);
+		}
 
-		cout << "PC: " << pc << endl;
-		pc = pc + nextAddr;
-		if (nextAddr != 4)
-			nextAddr = 4;
+		cout << "jAddr: " << jAddr << endl;
+		cout << "PC: " << pc.to_ulong() << endl;
+		if (opcode == 0x02)
+			pc = jAddr;
+		else if (opcode == 0x04 && isEqual)
+			pc = pc.to_ulong() + 4; //TODO: change to branch offset
+		else
+			pc = pc.to_ulong() + 4;//nextAddr.to_ulong();
         myRF.OutputRF(); // dump RF;
     }
         myDataMem.OutputDataMem(); // dump data mem
