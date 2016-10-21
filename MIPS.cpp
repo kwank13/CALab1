@@ -35,7 +35,7 @@ bitset<5> getFiveBits(bitset<32> Ins, int start, int end) {
 
 bitset<32> signExtend(bitset<16> Imm){
 	int j;
-	std::bitset<32> extend;
+	bitset<32> extend;
 	for (j = 0; j < 16; j++){
 		extend[j] = Imm[j];
 		extend[j+16] = Imm[15];
@@ -356,8 +356,7 @@ int main()
 			cout << "offset : " << offset << endl;
 			*/
 
-			if (opcode != 0x2b)
-				myRF.ReadWrite(rs, rt, rd, curInstruction, 0);
+			myRF.ReadWrite(rs, rt, rt, 0, 0);
 		}
 
 		// Execute
